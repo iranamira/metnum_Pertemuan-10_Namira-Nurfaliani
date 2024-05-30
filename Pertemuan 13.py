@@ -2,60 +2,84 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
-# Fungsi yang akan diintegrasikan
+# Fungsi untuk dihitung integralnya
 def f(x):
     return 4 / (1 + x**2)
 
-# Metode Trapezoid
-def trapezoid_integration(a, b, N):
+# Implementasi metode Simpson 1/3
+def simpson_13(f, a, b, N):
+    if N % 2 == 1:
+        N += 1  # N harus genap untuk metode Simpson 1/3
     h = (b - a) / N
-    integral = 0.5 * (f(a) + f(b))
-    for i in range(1, N):
-        integral += f(a + i * h)
-    integral *= h
+    x = np.linspace(a, b, N+1)
+    fx = f(x)
+    integral = fx[0] + fx[-1] + 4 * np.sum(fx[1:-1:2]) + 2 * np.sum(fx[2:-2:2])
+    integral *= h / 3
     return integral
 
-# Nilai referensi pi
-pi_ref = 3.14159265358979323846
+# Fungsi untuk menghitung galat RMS
+def rms_error(approx_value, true_value):
+    return np.sqrt(np.mean((approx_value - true_value) ** 2))
+
+# Nilai referensi untuk pi
+true_pi = 3.14159265358979323846
 
 # Variasi nilai N
 N_values = [10, 100, 1000, 10000]
-errors = []
-times = []
 
-# Penghitungan untuk setiap N
+# Uji kode dan ukur waktu eksekusi serta galat RMS
+results = []
 for N in N_values:
     start_time = time.time()
-    pi_approx = trapezoid_integration(0, 1, N)
+    approx_pi = simpson_13(f, 0, 1, N)
     end_time = time.time()
-
-    error = np.sqrt((pi_approx - pi_ref) ** 2)
     elapsed_time = end_time - start_time
+    error = rms_error(approx_pi, true_pi)
+    results.append((N, approx_pi, error, elapsed_time))
 
-    errors.append(error)
-    times.append(elapsed_time)
+# Tampilkan hasil
+for N, approx_pi, error, elapsed_time in results:
+    print(f'N = {N}:')
+    print(f'  Approximate pi = {approx_pi}')
+    print(f'  RMS Error = {error}')
+    print(f'  Execution Time = {elapsed_time} seconds\n')
 
-    print(f"N = {N}, Approximated pi = {pi_approx}, Error = {error}, Time = {elapsed_time}")
+# Extracting data for plotting
+N_values = [result[0] for result in results]
+approx_pis = [result[1] for result in results]
+errors = [result[2] for result in results]
+times = [result[3] for result in results]
 
-# Plot galat RMS dan waktu eksekusi
+# Plotting the results
 plt.figure(figsize=(14, 6))
 
-# Plot Galat RMS
-plt.subplot(1, 2, 1)
-plt.plot(N_values, errors, marker='o')
+# Plot Approximate Pi
+plt.subplot(1, 3, 1)
+plt.plot(N_values, approx_pis, marker='o', linestyle='-', color='b')
+plt.axhline(y=true_pi, color='r', linestyle='--', label='True π')
+plt.xlabel('N')
+plt.ylabel('Approximate π')
+plt.title('Approximate π vs N')
+plt.xscale('log')
+plt.legend()
+
+# Plot RMS Error
+plt.subplot(1, 3, 2)
+plt.plot(N_values, errors, marker='o', linestyle='-', color='g')
+plt.xlabel('N')
+plt.ylabel('RMS Error')
+plt.title('RMS Error vs N')
 plt.xscale('log')
 plt.yscale('log')
-plt.xlabel('N (log scale)')
-plt.ylabel('Galat RMS (log scale)')
-plt.title('Galat RMS vs N')
 
-# Plot Waktu Eksekusi
-plt.subplot(1, 2, 2)
-plt.plot(N_values, times, marker='o')
+# Plot Execution Time
+plt.subplot(1, 3, 3)
+plt.plot(N_values, times, marker='o', linestyle='-', color='m')
+plt.xlabel('N')
+plt.ylabel('Execution Time (seconds)')
+plt.title('Execution Time vs N')
 plt.xscale('log')
-plt.xlabel('N (log scale)')
-plt.ylabel('Waktu Eksekusi (s)')
-plt.title('Waktu Eksekusi vs N')
+plt.yscale('log')
 
 plt.tight_layout()
 plt.show()
